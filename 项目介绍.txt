@@ -1,0 +1,80 @@
+1.电子词典项目（英英词典）
+
+1.功能确定
+    1.用户可以登录，注册
+      登录凭借用户名和密码
+      注册输入用户名，密码
+
+    
+
+    2.服务器和客户端，可满足多个客户端登录
+    3.客户端一旦启动，进入一级界面
+        1.一级界面功能：登录 注册 退出
+        2.如果登录失败，返回一级界面
+    4.登录成功，进入二级界面
+    5.二级界面功能
+        1.查词：循环查词，输入单词后可以得到单词解释，输入 ## 退出查词功能
+        2.历史记录：显示用户之前的查词记录
+            格式：name  content  time
+        3.账号注销，回到一级界面
+
+
+        用户名（*）：
+        密码（*）：
+        确认密码（*）：
+        性别：sex enum('M','F','S') default 'S'
+        年龄：
+
+2.技术分析：
+    1.确定单词查询方法：文本，数据库，确定为数据库
+    2.确定套接字和并发：TCP+多线程
+    3.数据库使用：Mysql
+    4.建库，建表
+        1.将单词和解释插入到数据表中
+        2.确定项目需要几张表，需要多少字段，字段之间的关系
+    5.项目结构分析，分为几部分，几个功能模块
+        1.一级界面
+            注册 登录 退出
+        2.二级界面
+            查词 历史记录 注销
+
+3.项目实现
+    1.数据库设计
+        1.建库：create database dict character set utf8;
+        2.建表：
+            1.用户表（user)
+                字段：id(int)    username(varchar)    password（char)
+
+            2.单词表(words) 
+                字段： id   word    interpret
+
+            3.历史记录表(history) 
+                字段： id   username    word    time
+            
+    create table user(
+    id int primary key auto_increment,
+    username varchar(30) not null,
+    password char(40) not null
+    )charset=utf8;
+
+    create table words(
+    id int primary key auto_increment,
+    word varchar(128),
+    interpret text
+    )charset=utf8;
+
+    create table history(
+    id int primary key auto_increment,
+    username varchar(30) not null,
+    word varchar(128),
+    time varchar(50)
+    )charset=utf8;
+    
+
+            
+    2.项目结构分析 
+    3.搭建通讯模型
+    4.具体功能实现
+
+
+

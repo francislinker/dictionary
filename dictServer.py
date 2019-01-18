@@ -1,49 +1,120 @@
 '''
-项目：电子词典
-模块：socket pymysql
+项目:电子词典
+模块:socket pymysql 
 '''
-# import socket
-# import pymysql
-# import os
-# import sys
+import socket
+import pymysql
+import os 
+import sys 
 
-# def main():
-#     address = ('0.0.0.0',8888)
-#     #创建数据库连接对象
-#     db = pymysql.connect('localhost','root','123456','dict',charset='utf8')
-#     #创建TCP套接字
-#     server = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-#     server.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
-#     server.bind(address)
-#     server.listen(10)
-#     print('等待客户端连接...')
-#     while True:
-#         try:
-#             client,addr = server.accept()
-#             print('客户端',addr,'已连接..')
-#         except KeyboardInterrupt:
-#             sys.exit('服务器已经关闭，客户端无法连接...')
-#         except Exception as e:
-#             print(e)
-#             continue
-
-#         pid = os.fork()#每来一个客户端创建一个子进程
-
-#         if pid == 0:
-#             doRequest(client)
-#             sys.exit('客户端退出')#事情做完就退出子进程
+# 搭建网络
+def main():
+    ADDRESS = ('0.0.0.0',8888)
+    # 创建数据库连接
+    db = pymysql.connect('localhost','root','123456',
+                          'dict',charset='utf8')
+    # 创建TCP套接字
+    server = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+    # 设置端口复用
+    server.setsockopt(socket.SOL_SOCKET,
+                      socket.SO_REUSEADDR,1)
+    server.bind(ADDRESS)
+    server.listen(10)
+    print("等待客户端连接......")
+    while True:
+        try:
+            client,addr = server.accept()
+            print('客户端',addr,'连接过来了')
+        except KeyboardInterrupt:
+            sys.exit('服务器关闭')
+        except Exception as e:
+            print(e)
+            continue
         
-#         else:
-#             continue
+        # 创建进程,子进程和客户端交互，父进程等待其他客户端连接
+        pid = os.fork()
+        # 子进程负责和客户端交互
+        if pid == 0:
+            doRequest(client,db)
+            sys.exit('客户端退出')
+        # 父进程继续上去等待下一个客户端连接
+        else:
+            continue
+
+# 处理客户端请求函数
+def doRequest(client,db):
+    while True:
+        message = client.recv(1024).decode()
+        msgList = message.split(' ')
+        # msgList: ['R','用户名','密码']
+        # 一级子界面退出功能
+        if msgList[0] == 'E':
+            sys.exit(0)
+        elif msgList[0] == 'R':
+            # 处理注册函数
+            doRegister(client,db,msgList[1],msgList[2])
+        elif msgList[0] == 'L':
+            # 处理登录函数
+            doLogin(client,db,msgList[1],msgList[2])
+# 处理注册函数
+def doRegister(client,db,username,password):
+    # 判断user表中是否有此用户
+    cursor = db.cursor()
+    sel = 'select password from user where username=%s'
+    # 根据要注册的用户名判断查询结果是否为空
+    cursor.execute(sel,[username])
+    # r结果为元组(用户不存在,空元组,否则为非空元组)
+    r = cursor.fetchall()
+    if r:
+        client.send('EXISTS'.encode())
+        return
+    else:
+        # 用户不存在,可以注册
+        ins = 'insert into user(username,password) \
+               values (%s,%s)'
+        try:
+            cursor.execute(ins,[username,password])
+            db.commit()
+            client.send('OK'.encode())
+        except Exception as e:
+            db.rollback()
+            client.send('FAIL'.encode())
     
-# def doRequest(client):
-#     while True:
-#         message=client.recv(1024)
-#         print(message.decode())
-#         client.send('服务端收到'.encode())
+# 处理登录函数
+def doLogin(client,db,username,password):
+    sel = 'select password from user where username=%s'
+    cursor = db.cursor()
+    cursor.execute(sel,[username])
+    r = cursor.fetchall()
+    # 如果没有查到结果，表示用户名输入错误
+    if not r:
+        client.send('NAMEERROR'.encode())
+    # ((203804380abcd323d),)
+    elif r[0][0] == password:
+        client.send('OK'.encode())
+    else:
+        client.send('PWDERROR'.encode())
 
-        
+
+    
 
 
-# if __name__ == "__main__":
-#     main()
+
+
+
+
+if __name__ == '__main__':
+    main()
+
+
+
+
+
+
+
+
+
+
+
+
+

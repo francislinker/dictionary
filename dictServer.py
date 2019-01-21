@@ -107,7 +107,6 @@ def doinsert_History(db,username,word):
         print(e)
         db.rollback()
 
-
 # 处理注册函数
 def doRegister(client,db,username,password):
     # 判断user表中是否有此用户

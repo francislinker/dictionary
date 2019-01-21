@@ -101,14 +101,14 @@ def doLogin(client):
     if data == 'OK':
         print('登录成功')
         # 二级子界面函数
-        doTwoLogin(client)
+        doTwoLogin(client,username)
     elif data == 'NAMEERROR':
         print('用户名错误')
     else:
         print('密码错误')
 
 # 二级子界面函数
-def doTwoLogin(client):
+def doTwoLogin(client,username):
     while True:
         prompt = '''
         \033[32m===========二级子界面============
@@ -121,21 +121,44 @@ def doTwoLogin(client):
             continue
         elif cmd == '1':
             # 查词函数
-            doQuery()
+            doQuery(client,username)
         elif cmd == '2':
             # 查询历史记录函数
-            doHistory()
+            doHistory(client,username)
         else:
             # 注销:终止死循环，自动跳转到一级子界面，嵌套循环
             break
 
 # 查词函数
-def doQuery():
-    pass 
+def doQuery(client,username):
+    while True:
+        word = input("请输入要查询的单词（##退出）：")
+        if word == "##":
+            break
+        #包装消息
+        message = "Q %s %s" % (username,word)
+        client.send(message.encode())
+        data = client.recv(1024).decode()#等待服务器反馈
+        if data == 'Fail':
+            print("词库中没有查找到该单词")
+        else :
+            #否则直接打印单词解释
+            print("单词解释:",data)
 
 # 查询历史记录函数
-def doHistory():
-    pass 
+def doHistory(client,username):
+    message = 'H %s'%username
+    client.send(message.encode())
+    msg = client.recv(1024).decode()
+    if msg == 'OK':
+        while True:
+            data = client.recv(1024).decode()
+            if data == '##':
+                print('查询完毕！')
+                break
+            print(data)
+    else:
+        print('\033[32m没有查找到相关历史记录\033[0m')
 
 # 客户端退出函数
 def doExit(client):

@@ -53,9 +53,61 @@ def doRequest(client,db):
         elif msgList[0] == 'R':
             # 处理注册函数
             doRegister(client,db,msgList[1],msgList[2])
+
         elif msgList[0] == 'L':
             # 处理登录函数
             doLogin(client,db,msgList[1],msgList[2])
+
+        elif msgList[0] == 'Q':
+            doQuery(client,db,msgList[1],msgList[2])
+
+        elif msgList[0] == 'H':
+            dohistory(client,db,msgList[1])
+
+def dohistory(client,db,username):
+    cursor = db.cursor()
+    sel = 'select * from history where username=%s'
+    cursor.execute(sel,[username])
+    result = cursor.fetchall()
+    if not result:
+        client.send('Fail'.encode())
+    else:
+        client.send(b'OK')
+        import time
+        time.sleep(0.1)
+        for r in result:
+            message = '%s %s %s' % (r[1],r[2],r[3])
+            client.send(message.encode())
+            time.sleep(0.1)
+        client.send(b"##")
+        time.sleep(0.1)
+
+
+def doQuery(client,db,username,word):
+    cursor = db.cursor()
+    sel = 'select interpret from words where word=%s'
+    cursor.execute(sel,[word])
+    result = cursor.fetchall()
+    if not result:
+        client.send(b"Fail")
+    else:
+        client.send(result[0][0].encode())
+        doinsert_History(db,username,word)
+
+def doinsert_History(db,username,word):
+    cursor = db.cursor()
+    ins = 'insert into history(username,word,time) \
+    values(%s,%s,%s)'
+    import time
+    Time = time.ctime()
+    try:
+        cursor.execute(ins,[username,word,Time])
+        db.commit()
+    except Exception as e:
+        print(e)
+        db.rollback()
+
+
 # 处理注册函数
 def doRegister(client,db,username,password):
     # 判断user表中是否有此用户
@@ -79,6 +131,7 @@ def doRegister(client,db,username,password):
         except Exception as e:
             db.rollback()
             client.send('FAIL'.encode())
+
     
 # 处理登录函数
 def doLogin(client,db,username,password):
@@ -94,13 +147,6 @@ def doLogin(client,db,username,password):
         client.send('OK'.encode())
     else:
         client.send('PWDERROR'.encode())
-
-
-    
-
-
-
-
 
 
 if __name__ == '__main__':
